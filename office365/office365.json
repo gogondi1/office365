@@ -1,0 +1,88 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "imageTemplateName": {
+        "type": "string"
+      },
+      "api-version": {
+        "type": "string"
+      },
+      "svclocation": {
+        "type": "string"
+      }
+    },
+    "variables": {},
+    "resources": [
+      {
+        "name": "[parameters('imageTemplateName')]",
+        "type": "Microsoft.VirtualMachineImages/imageTemplates",
+        "apiVersion": "[parameters('api-version')]",
+        "location": "[parameters('svclocation')]",
+        "dependsOn": [],
+        "tags": {
+          "imagebuilderTemplate": "win10multi",
+          "userIdentity": "enabled"
+        },
+        "identity": {
+          "type": "UserAssigned",
+          "userAssignedIdentities": {
+            "<imgBuilderId>": {}
+          }
+        },
+        "properties": {
+          "buildTimeoutInMinutes": 300,
+          "vmProfile": {
+            "vmSize": "Standard_D2_v2",
+            "osDiskSizeGB": 127
+          },
+          "source": {
+            "type": "PlatformImage",
+            "publisher": "MicrosoftWindowsDesktop",
+            "offer": "Windows-10",
+            "sku": "21h1-pro",
+            "version": "latest"
+          },
+          "customize": [
+            {
+              "type": "PowerShell",
+              "name": "download adobe Reader DC",
+              "inline": [
+                "invoke-webrequest -uri 'https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/2100520060/AcroRdrDC2100520060_en_US.exe' -OutFile 'c:\\AcroRdrDC2100520060_en_US.exe'",
+                " Set-Location -Path 'c:/' ", " Start-Process -FilePath 'c:\\AcroRdrDC2100520060_en_US.exe' -ArgumentList '/sPB /rs' "
+              ]
+            },
+            {
+              "type": "PowerShell",
+              "name": "download office 365 and config from github",
+              "inline": [
+                "invoke-webrequest -uri 'https://github.com/gogondi1/office365/blob/master/office365/setup.exe?raw=true'  -OutFile 'c:\\setup.exe' ",
+                "invoke-webrequest -uri 'https://raw.githubusercontent.com/gogondi1/office365/master/office365/Configuration.xml'  -OutFile 'c:\\configuration.xml' ",
+                "Set-Location -path 'c:\\' ", "./setup.exe  /download  ./configuration.xml", "./setup.exe  /configure  ./configuration.xml"
+              ]
+            },
+            {
+                "type": "PowerShell",
+                "name": "download the chrome",
+                "inline": [
+                  "invoke-webrequest -uri 'http://dl.google.com/chrome/install/375.126/chrome_installer.exe'  -OutFile 'c:\\ChromeInstaller.exe' ",
+                  "Set-Location -path 'c:\\' ", "./ChromeInstaller.exe /silent /install"
+                ]
+            }
+          ],
+          "distribute": [
+            {
+                "type": "SharedImage",
+                "galleryImageId": "/subscriptions/<subscriptionID>/resourceGroups/<rgName>/providers/Microsoft.Compute/galleries/<sharedImageGalName>/images/<imageDefName>",
+                "runOutputName": "<runOutputName>",
+                "artifactTags": {
+                    "source": "wvd10",
+                    "baseosimg": "windows10"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+  
