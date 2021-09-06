@@ -78,8 +78,11 @@
                 "artifactTags": {
                     "source": "wvd10",
                     "baseosimg": "windows10"
-              }
-            }
+              },
+                    "replicationRegions": [
+                      "<region1>"
+
+                    ]            }
           ]
         }
       }
